@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    container_name: usta_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./usta_xizmati.db:/app/usta_xizmati.db
+      - ./backups:/app/backups
+      - ./logs:/app/logs
+    command: python main.py
+
+  webapp:
+    build: .
+    container_name: usta_webapp
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./usta_xizmati.db:/app/usta_xizmati.db
+      - ./backups:/app/backups
+      - ./logs:/app/logs
+    ports:
+      # ⚠️ Xavfsizlik: FAQAT shu serverning o'zidan (127.0.0.1) ochiladi —
+      # login/parol shifrlanmagan HTTP orqali uzatiladi, shuning uchun
+      # butun internetga ("8000:8000" qilib) ochish tavsiya etilmaydi.
+      # Boshqa joydan kirish uchun: `ssh -L 8000:localhost:8000 user@server`
+      # yoki Nginx/Caddy + HTTPS orqali proksi qiling.
+      - "127.0.0.1:8000:8000"
+    command: uvicorn webapp.app:app --host 0.0.0.0 --port 8000
+    depends_on:
+      - bot
